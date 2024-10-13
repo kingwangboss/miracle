@@ -32,4 +32,4 @@ ENV FLASK_ENV=production
 EXPOSE 5000
 
 # 运行应用
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "300", "--workers", "4", "app:app"]

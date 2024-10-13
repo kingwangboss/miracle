@@ -4,6 +4,7 @@ from analysis.fermat_analysis import ComprehensiveAnalysis, configure_plt_for_ba
 import io
 import base64
 from threading import Lock
+import concurrent.futures
 
 app = Flask(__name__)
 analysis_lock = Lock()
@@ -12,19 +13,27 @@ analysis_lock = Lock()
 def before_request():
     configure_plt_for_backend()
 
+def process_stock_data(stock_code):
+    crawler = StockCrawler(stock_code)
+    data = crawler.fetch_data()
+    
+    with analysis_lock:
+        configure_plt_for_backend()
+        analysis = ComprehensiveAnalysis(data)
+        accurate_points = analysis.find_accurate_turning_points()
+        price_chart, cluster_chart = analysis.get_charts(accurate_points)
+        prediction = analysis.predict_next_turning_point()
+    
+    return accurate_points, price_chart, cluster_chart, prediction
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         stock_code = request.form['stock_code']
-        crawler = StockCrawler(stock_code)
-        data = crawler.fetch_data()
         
-        with analysis_lock:
-            configure_plt_for_backend()
-            analysis = ComprehensiveAnalysis(data)
-            accurate_points = analysis.find_accurate_turning_points()
-            price_chart, cluster_chart = analysis.get_charts(accurate_points)
-            prediction = analysis.predict_next_turning_point()
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(process_stock_data, stock_code)
+            accurate_points, price_chart, cluster_chart, prediction = future.result()
         
         return jsonify({
             'turning_points': [
