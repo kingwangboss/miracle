@@ -79,13 +79,16 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 
 2. 创建一个新文件夹，并在其中创建名为`Dockerfile`的文件，将上面提供的Dockerfile内容复制到这个文件中。
 
-3. 在包含Dockerfile的文件夹中运行以下命令来构建Docker镜像：   ```
-   docker build -t miracle-stock-analysis .
-   ```
+3. 在包含Dockerfile的文件夹中运行以下命令来构建Docker镜像：   
 
-4. 构建完成后，运行以下命令来启动应用：   ```
+```
+   docker build -t miracle-stock-analysis .
+```
+
+4. 构建完成后，运行以下命令来启动应用：   
+```
    docker run -p 5000:5000 miracle-stock-analysis
-   ```
+```
 
 5. 在浏览器中访问 `http://localhost:5000` 来使用应用。
 

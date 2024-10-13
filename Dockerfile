@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y git
 RUN git clone https://github.com/yourusername/miracle-stock-analysis.git .
 
 # 安装项目依赖
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 安装中文字体

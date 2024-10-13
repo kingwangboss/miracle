@@ -5,6 +5,8 @@ matplotlib
 scipy
 scikit-learn
 flask
+plotly
+
 
 
 

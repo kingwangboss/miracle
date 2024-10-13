@@ -3,31 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>股票分析</title>
+    <title>Miracle 股票分析</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
-        h1 { color: #333; }
-        form { margin-bottom: 20px; }
-        input, button { font-size: 16px; padding: 5px; }
-        #result { margin-top: 20px; }
-        img { max-width: 100%; height: auto; margin-bottom: 20px; }
-    </style>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
-<body>
-    <h1>股票分析</h1>
-    <form id="stockForm">
-        <input type="text" id="stockCode" placeholder="请输入6位股票代码" required>
-        <button type="submit">分析</button>
-    </form>
-    <div id="result"></div>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center text-blue-600 mb-8">Miracle 股票分析</h1>
+        <form id="stockForm" class="mb-8">
+            <div class="flex justify-center">
+                <input type="text" id="stockCode" placeholder="请输入6位股票代码" required
+                       class="px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    分析
+                </button>
+            </div>
+        </form>
+        <div id="result" class="bg-white shadow-md rounded-lg p-6 mb-8 hidden">
+            <h2 class="text-2xl font-semibold mb-4">分析结果</h2>
+            <div id="turningPoints"></div>
+            <div id="prediction" class="mt-4"></div>
+        </div>
+        <div id="priceChart" class="bg-white shadow-md rounded-lg p-4 mb-8 h-96"></div>
+        <div id="clusterChart" class="bg-white shadow-md rounded-lg p-4 h-96"></div>
+    </div>
 
     <script>
         document.getElementById('stockForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const stockCode = document.getElementById('stockCode').value;
             const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = '正在分析，请稍候...';
+            const turningPointsDiv = document.getElementById('turningPoints');
+            const predictionDiv = document.getElementById('prediction');
+            
+            resultDiv.classList.add('hidden');
+            turningPointsDiv.innerHTML = '<p class="text-center">正在分析，请稍候...</p>';
 
             axios.post('/', {
                 stock_code: stockCode
@@ -38,26 +49,34 @@
             })
             .then(function (response) {
                 const data = response.data;
-                let html = '<h2>分析结果</h2>';
-                html += '<h3>拐点</h3>';
-                html += '<ul>';
+                resultDiv.classList.remove('hidden');
+                
+                let turningPointsHtml = '<h3 class="text-xl font-semibold mb-2">准确拐点</h3><ul class="list-disc pl-5">';
                 data.turning_points.forEach(function(point) {
-                    html += `<li>${point.date}: ${point.type === 'Peak' ? '峰值' : '谷值'} 价格为 ${point.price.toFixed(2)}</li>`;
+                    turningPointsHtml += `<li>${point.date}: ${point.type === 'Peak' ? '峰值' : '谷值'} 价格为 ${point.price.toFixed(2)}</li>`;
                 });
-                html += '</ul>';
-                html += `<h3>预测</h3><p>${data.prediction}</p>`;
-                html += '<h3>价格与拐点分析</h3>';
-                html += `<img src="data:image/png;base64,${data.price_chart}" alt="价格与拐点分析">`;
-                html += '<h3>技术指标分析</h3>';
-                html += `<img src="data:image/png;base64,${data.indicators_chart}" alt="技术指标分析">`;
-                html += '<h3>聚类分析</h3>';
-                html += `<img src="data:image/png;base64,${data.cluster_chart}" alt="聚类分析">`;
-                resultDiv.innerHTML = html;
+                turningPointsHtml += '</ul>';
+                turningPointsDiv.innerHTML = turningPointsHtml;
+
+                predictionDiv.innerHTML = `<h3 class="text-xl font-semibold mb-2">预测</h3>
+                    <p class="font-medium ${data.prediction.includes('买入') ? 'text-green-600' : data.prediction.includes('卖出') ? 'text-red-600' : 'text-yellow-600'}">${data.prediction}</p>`;
+
+                const priceChartData = JSON.parse(data.price_chart);
+                const clusterChartData = JSON.parse(data.cluster_chart);
+
+                Plotly.newPlot('priceChart', priceChartData.data, priceChartData.layout, {responsive: true});
+                Plotly.newPlot('clusterChart', clusterChartData.data, clusterChartData.layout, {responsive: true});
             })
             .catch(function (error) {
-                resultDiv.innerHTML = '分析出错，请重试';
+                resultDiv.classList.remove('hidden');
+                turningPointsDiv.innerHTML = '<p class="text-red-500">分析出错，请重试</p>';
                 console.error(error);
             });
+        });
+
+        window.addEventListener('resize', function() {
+            Plotly.Plots.resize('priceChart');
+            Plotly.Plots.resize('clusterChart');
         });
     </script>
 </body>

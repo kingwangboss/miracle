@@ -1,20 +1,30 @@
+import matplotlib
+matplotlib.use('Agg')  # 使用非交互式后端
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import matplotlib as mpl
 from scipy.signal import argrelextrema
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import io
 import base64
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.io as pio
 
 # 设置中文字体
 mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体为黑体
 mpl.rcParams['axes.unicode_minus'] = False  # 解决保存图像时负号'-'显示为方块的问题
 
+# 在文件开头添加以下函数
+def configure_plt_for_backend():
+    plt.switch_backend('Agg')
+
 class ComprehensiveAnalysis:
     def __init__(self, data):
         self.data = data
+        configure_plt_for_backend()
 
     def calculate_indicators(self):
         # 移动平均线
@@ -130,92 +140,161 @@ class ComprehensiveAnalysis:
         plt.ylabel('RSI')
         plt.show()
 
-    def predict_next_turning_point(self):
-        last_price = self.data['Close'].iloc[-1]
-        last_rsi = self.data['RSI'].iloc[-1]
-        last_macd = self.data['MACD'].iloc[-1]
-        last_signal = self.data['Signal'].iloc[-1]
-        last_bb_upper = self.data['BB_upper'].iloc[-1]
-        last_bb_lower = self.data['BB_lower'].iloc[-1]
-        last_volume_change = self.data['Volume_Change'].iloc[-1]
+    def fermat_turning_points(self, window=5):
+        prices = self.data['Close'].values
+        turning_points = []
         
-        peak_signals = (last_rsi > 70, last_price > last_bb_upper, last_macd > last_signal, last_volume_change > 0.1)
-        valley_signals = (last_rsi < 30, last_price < last_bb_lower, last_macd < last_signal, last_volume_change < -0.1)
+        for i in range(window, len(prices) - window):
+            left = prices[i-window:i]
+            right = prices[i:i+window+1]
+            
+            if np.all(left <= prices[i]) and np.all(right <= prices[i]):
+                turning_points.append((self.data['Date'].iloc[i], prices[i], 'Peak'))
+            elif np.all(left >= prices[i]) and np.all(right >= prices[i]):
+                turning_points.append((self.data['Date'].iloc[i], prices[i], 'Valley'))
         
-        peak_score = sum(peak_signals)
-        valley_score = sum(valley_signals)
+        return turning_points
+
+    def find_accurate_turning_points(self, window=5):
+        self.calculate_indicators()
+        prices = self.data['Close'].values
+        turning_points = []
         
-        if peak_score >= 3:
-            return "多个指标显示可能即将出现峰值拐点,建议密切关注卖出机会"
-        elif valley_score >= 3:
-            return "多个指标显示可能即将出现谷值拐点,建议密切关注买入机会"
-        else:
-            return f"目前没有明确的拐点信号,建议继续观察。峰值信号强度: {peak_score}/4, 谷值信号强度: {valley_score}/4"
+        for i in range(window, len(prices) - window):
+            left = prices[i-window:i]
+            right = prices[i:i+window+1]
+            
+            if np.all(left <= prices[i]) and np.all(right <= prices[i]):
+                # 潜在峰值
+                if (self.data['RSI'].iloc[i] > 60 or  # 放宽RSI条件
+                    prices[i] > self.data['BB_upper'].iloc[i] or
+                    self.data['MACD'].iloc[i] > self.data['Signal'].iloc[i]):
+                    turning_points.append((self.data['Date'].iloc[i], prices[i], 'Peak'))
+            elif np.all(left >= prices[i]) and np.all(right >= prices[i]):
+                # 潜在谷值
+                if (self.data['RSI'].iloc[i] < 40 or  # 放宽RSI条件
+                    prices[i] < self.data['BB_lower'].iloc[i] or
+                    self.data['MACD'].iloc[i] < self.data['Signal'].iloc[i]):
+                    turning_points.append((self.data['Date'].iloc[i], prices[i], 'Valley'))
+        
+        return turning_points
 
     def get_charts(self, turning_points):
         self.cluster_analysis()
         
-        # 价格和移动平均线图表
-        fig, ax1 = plt.subplots(figsize=(12, 6))
-        ax1.plot(self.data['Date'], self.data['Close'], label='收盘价')
+        # 创建子图
+        fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1,
+                            subplot_titles=('股票价格与拐点分析', 'RSI指标', 'MACD指标'))
+        
+        # 价格和移动平均线
+        fig.add_trace(go.Scatter(x=self.data['Date'], y=self.data['Close'], name='收盘价'), row=1, col=1)
         for window in [5, 20, 50]:
-            ax1.plot(self.data['Date'], self.data[f'MA{window}'], label=f'{window}日均线')
+            fig.add_trace(go.Scatter(x=self.data['Date'], y=self.data[f'MA{window}'], name=f'{window}日均线'), row=1, col=1)
         
         peaks = [tp for tp in turning_points if tp[2] == 'Peak']
         valleys = [tp for tp in turning_points if tp[2] == 'Valley']
         
-        ax1.scatter([p[0] for p in peaks], [p[1] for p in peaks], color='red', label='峰值')
-        ax1.scatter([v[0] for v in valleys], [v[1] for v in valleys], color='green', label='谷值')
+        fig.add_trace(go.Scatter(x=[p[0] for p in peaks], y=[p[1] for p in peaks], mode='markers',
+                                 marker=dict(color='red', size=10), name='峰值'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=[v[0] for v in valleys], y=[v[1] for v in valleys], mode='markers',
+                                 marker=dict(color='green', size=10), name='谷值'), row=1, col=1)
         
-        ax1.set_title('股票价格与拐点分析')
-        ax1.set_xlabel('日期')
-        ax1.set_ylabel('价格')
-        ax1.legend()
-        plt.xticks(rotation=45)
+        # RSI
+        fig.add_trace(go.Scatter(x=self.data['Date'], y=self.data['RSI'], name='RSI'), row=2, col=1)
+        fig.add_hline(y=70, line_dash="dash", line_color="red", row=2, col=1)
+        fig.add_hline(y=30, line_dash="dash", line_color="green", row=2, col=1)
         
-        price_chart = self.fig_to_base64(fig)
-        plt.close(fig)
+        # MACD
+        fig.add_trace(go.Scatter(x=self.data['Date'], y=self.data['MACD'], name='MACD'), row=3, col=1)
+        fig.add_trace(go.Scatter(x=self.data['Date'], y=self.data['Signal'], name='Signal'), row=3, col=1)
         
-        # RSI和MACD图表
-        fig, (ax2, ax3) = plt.subplots(2, 1, figsize=(12, 10))
-        ax2.plot(self.data['Date'], self.data['RSI'], label='RSI')
-        ax2.axhline(y=70, color='r', linestyle='--')
-        ax2.axhline(y=30, color='g', linestyle='--')
-        ax2.set_title('RSI指标')
-        ax2.set_xlabel('日期')
-        ax2.set_ylabel('RSI值')
-        ax2.legend()
+        fig.update_layout(
+            height=600,  # 调整高度
+            title_text="股票分析图表",
+            autosize=True,
+            margin=dict(l=50, r=50, t=50, b=50),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        fig.update_xaxes(title_text="日期", row=3, col=1)
+        fig.update_yaxes(title_text="价格", row=1, col=1)
+        fig.update_yaxes(title_text="RSI", row=2, col=1)
+        fig.update_yaxes(title_text="MACD", row=3, col=1)
         
-        ax3.plot(self.data['Date'], self.data['MACD'], label='MACD')
-        ax3.plot(self.data['Date'], self.data['Signal'], label='Signal')
-        ax3.set_title('MACD指标')
-        ax3.set_xlabel('日期')
-        ax3.set_ylabel('MACD值')
-        ax3.legend()
-        
-        plt.tight_layout()
-        indicators_chart = self.fig_to_base64(fig)
-        plt.close(fig)
+        price_chart = pio.to_json(fig)
         
         # 聚类结果可视化
-        fig, ax = plt.subplots(figsize=(10, 6))
+        cluster_fig = go.Figure()
         valid_data = self.data.dropna(subset=['Close', 'RSI', 'Cluster'])
-        scatter = ax.scatter(valid_data['Close'], valid_data['RSI'], c=valid_data['Cluster'], cmap='viridis')
-        plt.colorbar(scatter)
-        ax.set_title('价格-RSI聚类分析')
-        ax.set_xlabel('收盘价')
-        ax.set_ylabel('RSI')
+        cluster_fig.add_trace(go.Scatter(x=valid_data['Close'], y=valid_data['RSI'], mode='markers',
+                                         marker=dict(color=valid_data['Cluster'], colorscale='Viridis', showscale=True),
+                                         text=valid_data['Date'], hoverinfo='text+x+y'))
+        cluster_fig.update_layout(
+            height=500,  # 调整高度
+            title='价格-RSI聚类分析', 
+            xaxis_title='收盘价', 
+            yaxis_title='RSI',
+            autosize=True,
+            margin=dict(l=50, r=50, t=50, b=50)
+        )
         
-        cluster_chart = self.fig_to_base64(fig)
-        plt.close(fig)
+        cluster_chart = pio.to_json(cluster_fig)
         
-        return price_chart, indicators_chart, cluster_chart
+        return price_chart, cluster_chart
 
     def fig_to_base64(self, fig):
         buf = io.BytesIO()
         fig.savefig(buf, format='png')
         buf.seek(0)
         return base64.b64encode(buf.getvalue()).decode('utf-8')
+
+    def predict_next_turning_point(self):
+        accurate_points = self.find_accurate_turning_points()
+        if not accurate_points:
+            return "无法识别准确的拐点，可能需要更多数据。"
+
+        last_point = accurate_points[-1]
+        last_price = self.data['Close'].iloc[-1]
+        last_date = self.data['Date'].iloc[-1]
+        last_rsi = self.data['RSI'].iloc[-1]
+        last_macd = self.data['MACD'].iloc[-1]
+        last_signal = self.data['Signal'].iloc[-1]
+        last_bb_upper = self.data['BB_upper'].iloc[-1]
+        last_bb_lower = self.data['BB_lower'].iloc[-1]
+
+        days_since_last_point = (last_date - last_point[0]).days
+        price_change = (last_price - last_point[1]) / last_point[1] * 100
+
+        buy_signals = [
+            price_change < -3,  # 放宽价格变化条件
+            last_rsi < 40,      # 放宽RSI条件
+            last_price < last_bb_lower,
+            last_macd < last_signal
+        ]
+
+        sell_signals = [
+            price_change > 3,   # 放宽价格变化条件
+            last_rsi > 60,      # 放宽RSI条件
+            last_price > last_bb_upper,
+            last_macd > last_signal
+        ]
+
+        buy_score = sum(buy_signals)
+        sell_score = sum(sell_signals)
+
+        if last_point[2] == 'Peak':
+            if buy_score >= 2:  # 降低买入信号阈值
+                return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格已下跌{abs(price_change):.2f}%，多个技术指标显示可能接近谷值，建议考虑买入。"
+            elif sell_score >= 2:  # 降低卖出信号阈值
+                return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格已上涨{price_change:.2f}%，多个技术指标显示可能形成新的峰值，建议考虑卖出。"
+            else:
+                return f"最���的拐点是{days_since_last_point}天前的峰值。技术指标显示混合信号，建议观望。"
+        else:  # Valley
+            if sell_score >= 2:  # 降低卖出信号阈值
+                return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格已上涨{price_change:.2f}%，多个技术指标显示可能接近峰值，建议考虑卖出。"
+            elif buy_score >= 2:  # 降低买入信号阈值
+                return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格已下跌{abs(price_change):.2f}%，多个技术指标显示可能形成新的谷值，建议考虑买入。"
+            else:
+                return f"最近的拐点是{days_since_last_point}天前的谷值。技术指标显示混合信号，建议观望。"
 
 # 使用示例
 if __name__ == "__main__":
@@ -225,7 +304,7 @@ if __name__ == "__main__":
     data = crawler.fetch_data()
     
     analysis = ComprehensiveAnalysis(data)
-    turning_points = analysis.find_turning_points()
-    analysis.plot_results(turning_points)
+    accurate_points = analysis.find_accurate_turning_points()
+    price_chart, cluster_chart = analysis.get_charts(accurate_points)
     prediction = analysis.predict_next_turning_point()
     print(prediction)

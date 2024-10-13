@@ -1,10 +1,16 @@
 from flask import Flask, render_template, request, jsonify
 from crawler.stock_crawler import StockCrawler
-from analysis.fermat_analysis import ComprehensiveAnalysis
+from analysis.fermat_analysis import ComprehensiveAnalysis, configure_plt_for_backend
 import io
 import base64
+from threading import Lock
 
 app = Flask(__name__)
+analysis_lock = Lock()
+
+@app.before_request
+def before_request():
+    configure_plt_for_backend()
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -13,13 +19,12 @@ def index():
         crawler = StockCrawler(stock_code)
         data = crawler.fetch_data()
         
-        analysis = ComprehensiveAnalysis(data)
-        turning_points = analysis.find_turning_points()
-        
-        # 获取图表
-        price_chart, indicators_chart, cluster_chart = analysis.get_charts(turning_points)
-        
-        prediction = analysis.predict_next_turning_point()
+        with analysis_lock:
+            configure_plt_for_backend()
+            analysis = ComprehensiveAnalysis(data)
+            accurate_points = analysis.find_accurate_turning_points()
+            price_chart, cluster_chart = analysis.get_charts(accurate_points)
+            prediction = analysis.predict_next_turning_point()
         
         return jsonify({
             'turning_points': [
@@ -27,10 +32,9 @@ def index():
                     'date': date.strftime('%Y-%m-%d'),
                     'price': float(price),
                     'type': point_type
-                } for date, price, point_type in turning_points
+                } for date, price, point_type in accurate_points
             ],
             'price_chart': price_chart,
-            'indicators_chart': indicators_chart,
             'cluster_chart': cluster_chart,
             'prediction': prediction
         })
@@ -38,4 +42,4 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, threaded=True)
