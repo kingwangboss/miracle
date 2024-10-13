@@ -14,14 +14,13 @@ RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && 
 # 更新apt源为中国镜像
 RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
 
-# 安装系统依赖和Python依赖
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        fonts-wqy-microhei \
-        build-essential \
-        && apt-get clean \
-        && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir -r requirements.txt
+# 创建并激活虚拟环境
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# 更新pip并安装依赖
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 # 设置环境变量
 ENV FLASK_APP=app.py
