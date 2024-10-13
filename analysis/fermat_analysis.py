@@ -24,7 +24,7 @@ def configure_plt_for_backend():
 class ComprehensiveAnalysis:
     def __init__(self, data):
         self.data = data
-        configure_plt_for_backend()
+        self.calculate_indicators()
 
     def calculate_indicators(self):
         # 移动平均线
@@ -51,6 +51,17 @@ class ComprehensiveAnalysis:
         
         # 成交量变化率
         self.data['Volume_Change'] = self.data['Volume'].pct_change()
+        
+        # 添加KDJ指标
+        low_list = self.data['Low'].rolling(window=9, min_periods=9).min()
+        high_list = self.data['High'].rolling(window=9, min_periods=9).max()
+        rsv = (self.data['Close'] - low_list) / (high_list - low_list) * 100
+        self.data['K'] = rsv.ewm(com=2).mean()
+        self.data['D'] = self.data['K'].ewm(com=2).mean()
+        self.data['J'] = 3 * self.data['K'] - 2 * self.data['D']
+
+        # 添加OBV指标
+        self.data['OBV'] = (self.data['Close'].diff().apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0)) * self.data['Volume']).cumsum()
 
     def find_turning_points(self, window=10):
         self.calculate_indicators()
@@ -155,10 +166,11 @@ class ComprehensiveAnalysis:
         
         return turning_points
 
-    def find_accurate_turning_points(self, window=5):
+    def find_accurate_turning_points(self, window=10):
         self.calculate_indicators()
         prices = self.data['Close'].values
         turning_points = []
+        last_point_type = None
         
         for i in range(window, len(prices) - window):
             left = prices[i-window:i]
@@ -168,14 +180,22 @@ class ComprehensiveAnalysis:
                 # 潜在峰值
                 if (self.data['RSI'].iloc[i] > 60 or  # 放宽RSI条件
                     prices[i] > self.data['BB_upper'].iloc[i] or
-                    self.data['MACD'].iloc[i] > self.data['Signal'].iloc[i]):
-                    turning_points.append((self.data['Date'].iloc[i], prices[i], 'Peak'))
+                    self.data['MACD'].iloc[i] > self.data['Signal'].iloc[i] or
+                    self.data['K'].iloc[i] > self.data['D'].iloc[i] or
+                    self.data['OBV'].iloc[i] > self.data['OBV'].iloc[i-1]):
+                    if last_point_type != 'Peak':
+                        turning_points.append((self.data['Date'].iloc[i], prices[i], 'Peak'))
+                        last_point_type = 'Peak'
             elif np.all(left >= prices[i]) and np.all(right >= prices[i]):
                 # 潜在谷值
                 if (self.data['RSI'].iloc[i] < 40 or  # 放宽RSI条件
                     prices[i] < self.data['BB_lower'].iloc[i] or
-                    self.data['MACD'].iloc[i] < self.data['Signal'].iloc[i]):
-                    turning_points.append((self.data['Date'].iloc[i], prices[i], 'Valley'))
+                    self.data['MACD'].iloc[i] < self.data['Signal'].iloc[i] or
+                    self.data['K'].iloc[i] < self.data['D'].iloc[i] or
+                    self.data['OBV'].iloc[i] < self.data['OBV'].iloc[i-1]):
+                    if last_point_type != 'Valley':
+                        turning_points.append((self.data['Date'].iloc[i], prices[i], 'Valley'))
+                        last_point_type = 'Valley'
         
         return turning_points
 
@@ -260,41 +280,49 @@ class ComprehensiveAnalysis:
         last_signal = self.data['Signal'].iloc[-1]
         last_bb_upper = self.data['BB_upper'].iloc[-1]
         last_bb_lower = self.data['BB_lower'].iloc[-1]
+        last_k = self.data['K'].iloc[-1]
+        last_d = self.data['D'].iloc[-1]
+        last_obv = self.data['OBV'].iloc[-1]
+        last_obv_prev = self.data['OBV'].iloc[-2]
 
         days_since_last_point = (last_date - last_point[0]).days
         price_change = (last_price - last_point[1]) / last_point[1] * 100
 
         buy_signals = [
-            price_change < -3,  # 放宽价格变化条件
-            last_rsi < 40,      # 放宽RSI条件
+            last_rsi < 40,
             last_price < last_bb_lower,
-            last_macd < last_signal
+            last_macd < last_signal,
+            last_k < last_d,
+            last_obv > last_obv_prev,
+            price_change < -3
         ]
 
         sell_signals = [
-            price_change > 3,   # 放宽价格变化条件
-            last_rsi > 60,      # 放宽RSI条件
+            last_rsi > 60,
             last_price > last_bb_upper,
-            last_macd > last_signal
+            last_macd > last_signal,
+            last_k > last_d,
+            last_obv < last_obv_prev,
+            price_change > 3
         ]
 
         buy_score = sum(buy_signals)
         sell_score = sum(sell_signals)
 
         if last_point[2] == 'Peak':
-            if buy_score >= 2:  # 降低买入信号阈值
+            if buy_score >= 3:  # 降低买入信号阈值
                 return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格已下跌{abs(price_change):.2f}%，多个技术指标显示可能接近谷值，建议考虑买入。"
-            elif sell_score >= 2:  # 降低卖出信号阈值
+            elif sell_score >= 3:  # 降低卖出信号阈值
                 return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格已上涨{price_change:.2f}%，多个技术指标显示可能形成新的峰值，建议考虑卖出。"
             else:
-                return f"最���的拐点是{days_since_last_point}天前的峰值。技术指标显示混合信号，建议观望。"
+                return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格变化为{price_change:.2f}%，技术指标显示混合信号，建议观望。"
         else:  # Valley
-            if sell_score >= 2:  # 降低卖出信号阈值
+            if sell_score >= 3:  # 降低卖出信号阈值
                 return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格已上涨{price_change:.2f}%，多个技术指标显示可能接近峰值，建议考虑卖出。"
-            elif buy_score >= 2:  # 降低买入信号阈值
+            elif buy_score >= 3:  # 降低买入信号阈值
                 return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格已下跌{abs(price_change):.2f}%，多个技术指标显示可能形成新的谷值，建议考虑买入。"
             else:
-                return f"最近的拐点是{days_since_last_point}天前的谷值。技术指标显示混合信号，建议观望。"
+                return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格变化为{price_change:.2f}%，技术指标显示混合信号，建议观望。"
 
 # 使用示例
 if __name__ == "__main__":

@@ -7,14 +7,19 @@ WORKDIR /app
 # 复制项目文件到容器中
 COPY . /app
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y \
-    fonts-wqy-microhei \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# 设置pip源为国内镜像，提高下载速度
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
-# 安装Python依赖
-RUN pip install --no-cache-dir -r requirements.txt
+# 安装系统依赖和Python依赖
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        fonts-wqy-microhei \
+        build-essential \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir -r requirements.txt \
+    || pip install --no-cache-dir -r requirements.txt \
+    || pip install --no-cache-dir -r requirements.txt
 
 # 设置环境变量
 ENV FLASK_APP=app.py
