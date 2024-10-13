@@ -59,7 +59,10 @@
                 turningPointsDiv.innerHTML = turningPointsHtml;
 
                 predictionDiv.innerHTML = `<h3 class="text-xl font-semibold mb-2">预测</h3>
-                    <p class="font-medium ${data.prediction.includes('买入') ? 'text-green-600' : data.prediction.includes('卖出') ? 'text-red-600' : 'text-yellow-600'}">${data.prediction}</p>`;
+                    <p class="font-medium ${data.prediction.includes('最新数据点') ? 'text-blue-600 font-bold' : 
+                        data.prediction.includes('买入') ? 'text-green-600' : 
+                        data.prediction.includes('卖出') ? 'text-red-600' : 
+                        'text-yellow-600'}">${data.prediction}</p>`;
 
                 const priceChartData = JSON.parse(data.price_chart);
                 const clusterChartData = JSON.parse(data.cluster_chart);

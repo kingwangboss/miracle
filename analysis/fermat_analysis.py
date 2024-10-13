@@ -309,17 +309,24 @@ class ComprehensiveAnalysis:
         buy_score = sum(buy_signals)
         sell_score = sum(sell_signals)
 
+        # 检查最后一个数据点是否是新的拐点
+        if last_date == last_point[0]:
+            if last_point[2] == 'Peak':
+                return f"最新数据点（{last_date.strftime('%Y-%m-%d')}）被识别为峰值拐点，价格为 {last_price:.2f}。建议关注可能的下跌趋势。"
+            else:  # Valley
+                return f"最新数据点（{last_date.strftime('%Y-%m-%d')}）被识别为谷值拐点，价格为 {last_price:.2f}。建议关注可能的上涨趋势。"
+
         if last_point[2] == 'Peak':
-            if buy_score >= 3:  # 降低买入信号阈值
+            if buy_score >= 3:
                 return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格已下跌{abs(price_change):.2f}%，多个技术指标显示可能接近谷值，建议考虑买入。"
-            elif sell_score >= 3:  # 降低卖出信号阈值
+            elif sell_score >= 3:
                 return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格已上涨{price_change:.2f}%，多个技术指标显示可能形成新的峰值，建议考虑卖出。"
             else:
                 return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格变化为{price_change:.2f}%，技术指标显示混合信号，建议观望。"
         else:  # Valley
-            if sell_score >= 3:  # 降低卖出信号阈值
+            if sell_score >= 3:
                 return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格已上涨{price_change:.2f}%，多个技术指标显示可能接近峰值，建议考虑卖出。"
-            elif buy_score >= 3:  # 降低买入信号阈值
+            elif buy_score >= 3:
                 return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格已下跌{abs(price_change):.2f}%，多个技术指标显示可能形成新的谷值，建议考虑买入。"
             else:
                 return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格变化为{price_change:.2f}%，技术指标显示混合信号，建议观望。"

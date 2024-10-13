@@ -7,8 +7,15 @@ WORKDIR /app
 # 复制项目文件到容器中
 COPY . /app
 
-# 设置pip源为国内镜像，提高下载速度
-RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+# 设置多个pip源为国内镜像，提高下载速度和成功率
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip config set global.extra-index-url \
+    https://mirrors.aliyun.com/pypi/simple/ \
+    https://pypi.doubanio.com/simple/ \
+    https://pypi.mirrors.ustc.edu.cn/simple/
+
+# 更新apt源为中国镜像
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
 
 # 安装系统依赖和Python依赖
 RUN apt-get update && \
