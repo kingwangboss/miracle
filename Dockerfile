@@ -20,8 +20,13 @@ RUN apt-get update && apt-get install -y \
 # 设置工作目录
 WORKDIR /app
 
-# 克隆项目代码
-RUN git clone https://github.com/kingwangboss/miracle.git .
+# 克隆项目代码（带重试机制）
+RUN for i in {1..5}; do \
+        git clone https://github.com/kingwangboss/miracle.git . && break || sleep 15; \
+    done
+
+# 如果克隆失败，则从本地复制代码
+COPY . /app
 
 # 安装项目依赖
 RUN pip3 install --no-cache-dir -r requirements.txt

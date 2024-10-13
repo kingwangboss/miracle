@@ -73,20 +73,17 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 
 ## Docker部署
 
-本应用可以通过Docker轻松部署在Linux服务器上，无需手动克隆代码或安装依赖。
+本应用可以通过Docker轻松部署在Linux服务器上。
 
-1. 确保您的Linux服务器已安装Docker。如果没有，可以使用以下命令安装：
-   ```
+1. 确保您的Linux服务器已安装Docker。如果没有，可以使用以下命令安装：   ```
    sudo apt-get update
-   sudo apt-get install docker.io
-   ```
+   sudo apt-get install docker.io   ```
 
-2. 创建一个新文件夹，并在其中创建名为`Dockerfile`的文件，将以下内容复制到这个文件中：
-   ```dockerfile
-   # Dockerfile内容如上
-   ```
+2. 克隆项目代码到本地：   ```
+   git clone https://github.com/kingwangboss/miracle.git
+   cd miracle   ```
 
-3. 在包含Dockerfile的文件夹中运行以下命令来构建Docker镜像：   ```
+3. 在项目根目录中运行以下命令来构建Docker镜像：   ```
    sudo docker build -t miracle-stock-analysis .
    ```
 
@@ -99,3 +96,5 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
    ```
 
 注意：请确保您的服务器防火墙允许5000端口的访问。如果您使用的是云服务器，可能还需要在云平台的安全组设置中开放5000端口。
+
+如果在构建过程中遇到网络问题导致无法克隆代码，Dockerfile 会尝试从本地复制代码。确保您已经克隆了代码到本地，或者将代码文件放在与 Dockerfile 相同的目录中。
