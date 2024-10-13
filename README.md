@@ -17,14 +17,18 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 ## 本地运行
 
 1. 克隆项目到本地:   ```
-   git clone https://github.com/yourusername/miracle-stock-analysis.git
+   git clone https://github.com/kingwangboss/miracle.git
    cd miracle-stock-analysis   ```
 
-2. 安装依赖:   ```
-   pip install -r requirements.txt   ```
+2. 安装依赖:   
+```
+   pip install -r requirements.txt   
+```
 
-3. 运行Web应用:   ```
-   python app.py   ```
+3. 运行Web应用:   
+```
+   python app.py   
+```
 
 4. 在浏览器中打开 `http://localhost:5000`
 
@@ -34,27 +38,34 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 
 本应用可以通过Docker在Linux环境下轻松部署。
 
-1. 确保您的Linux服务器已安装Docker。如果没有，可以使用以下命令安装：   ```
+1. 确保您的Linux服务器已安装Docker。如果没有，可以使用以下命令安装：   
+```
    sudo apt-get update
-   sudo apt-get install docker.io   ```
+   sudo apt-get install docker.io   
+```
 
-2. 克隆项目到本地：   ```
+2. 克隆项目到本地：   
+```
    git clone https://github.com/kingwangboss/miracle.git
-   cd miracle-stock-analysis   ```
+   cd miracle-stock-analysis   
+```
 
-3. 构建Docker镜像：   ```
+3. 构建Docker镜像：   
+```
    sudo docker build -t miracle-stock-analysis .
-   ```
+```
 
    注意：构建过程可能需要一些时间，特别是在安装依赖项时。如果遇到网络问题，可能需要多次尝试。
 
-4. 运行Docker容器：   ```
+4. 运行Docker容器：   
+```
    sudo docker run -d -p 5000:5000 miracle-stock-analysis
-   ```
+```
 
-5. 现在，您可以通过服务器的IP地址和端口5000来访问应用，例如：   ```
+5. 现在，您可以通过服务器的IP地址和端口5000来访问应用，例如：   
+```
    http://your_server_ip:5000
-   ```
+```
 
 注意：请确保您的服务器防火墙允许5000端口的访问。如果您使用的是云服务器，可能还需要在云平台的安全组设置中开放5000端口。
 
@@ -62,28 +73,28 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 
 1. 构建基础镜像（不包含依赖安装）：   ```
    sudo docker build --target base -t miracle-stock-analysis-base .
-   ```
+```
 
 2. 运行基础镜像的容器：   ```
    sudo docker run -it --name miracle-temp miracle-stock-analysis-base /bin/bash
-   ```
+```
 
 3. 在容器内手动安装依赖：   ```
    pip3 install --no-cache-dir -r requirements.txt
-   ```
+```
 
 4. 在另一个终端窗口，将更改提交到新的镜像：   ```
    sudo docker commit miracle-temp miracle-stock-analysis
-   ```
+```
 
 5. 停止并删除临时容器：   ```
    sudo docker stop miracle-temp
    sudo docker rm miracle-temp
-   ```
+```
 
 6. 现在您可以使用新的镜像运行应用：   ```
    sudo docker run -d -p 5000:5000 miracle-stock-analysis
-   ```
+```
 
 ## 注意事项
 
