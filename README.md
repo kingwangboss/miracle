@@ -12,6 +12,8 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 6. 拐点预测: 基于当前市场状态预测可能出现的下一个拐点。
 7. Web界面: 提供简单的Web界面,方便用户输入股票代码并查看分析结果。
 
+## 项目结构
+
 ## 本地运行
 
 1. 克隆项目到本地:   ```
@@ -37,7 +39,7 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
    sudo apt-get install docker.io   ```
 
 2. 克隆项目到本地：   ```
-   git clone https://github.com/yourusername/miracle-stock-analysis.git
+   git clone https://github.com/kingwangboss/miracle.git
    cd miracle-stock-analysis   ```
 
 3. 构建Docker镜像：   ```
