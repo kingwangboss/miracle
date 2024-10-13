@@ -1,5 +1,20 @@
-# 使用官方Python运行时作为父镜像
-FROM python:3.9-slim
+# 使用Ubuntu作为基础镜像，这确保了Linux环境
+FROM ubuntu:20.04
+
+# 避免交互式前端
+ENV DEBIAN_FRONTEND=noninteractive
+
+# 设置时区
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 更新apt源并安装必要的软件
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    fonts-wqy-microhei \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
 WORKDIR /app
@@ -8,10 +23,7 @@ WORKDIR /app
 COPY . /app
 
 # 安装项目依赖
-RUN pip install --no-cache-dir -r requirements.txt
-
-# 安装中文字体
-RUN apt-get update && apt-get install -y fonts-wqy-microhei && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # 设置环境变量
 ENV FLASK_APP=app.py
