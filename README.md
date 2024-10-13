@@ -12,50 +12,41 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 6. 拐点预测: 基于当前市场状态预测可能出现的下一个拐点。
 7. Web界面: 提供简单的Web界面,方便用户输入股票代码并查看分析结果。
 
-## 使用方法
+## 本地运行
 
-1. 安装依赖:   ```
+1. 克隆项目到本地:   ```
+   git clone https://github.com/yourusername/miracle-stock-analysis.git
+   cd miracle-stock-analysis   ```
+
+2. 安装依赖:   ```
    pip install -r requirements.txt   ```
 
-2. 运行Web应用:   ```
+3. 运行Web应用:   ```
    python app.py   ```
 
-3. 在浏览器中打开 `http://localhost:5000`
+4. 在浏览器中打开 `http://localhost:5000`
 
-4. 在输入框中输入6位股票代码(例如: 000001),点击"分析"按钮。
+5. 在输入框中输入6位股票代码(例如: 000001),点击"分析"按钮。
 
-5. 等待分析完成,查看结果,包:
-   - 识别出的拐点列表
-   - 价格走势和拐点分析图
-   - 技术指标(RSI和MACD)分析图
-   - 聚类分析图
-   - 下一个可能拐点的预测结果
+## Docker部署
 
-## 计算逻辑
+如果您prefer使用Docker来部署和运行这个应用,请按照以下步骤操作:
 
-1. 数据获取:
-   - 使用东方财富网的API获取指定股票的历史数据。
-   - 默认获取最近一年的日线数据。
+1. 确保您的系统已安装Docker。
 
-2. 技术指标计算:
-   - 移动平均线(MA): 计算5日、10日、20日和50日移动平均线。
-   - 相对强弱指标(RSI): 使用14天周期计算RSI。
-   - MACD: 计算12日和26日EMA,以及9日信号线。
-   - 布林带: 计算20日移动平均线及其上下2个标准差。
+2. 克隆项目到本地:   ```
+   git clone https://github.com/yourusername/miracle-stock-analysis.git
+   cd miracle-stock-analysis   ```
 
-3. 拐点识别:
-   - 使用scipy的argrelextrema函数找出局部最大值和最小值。
-   - 结合RSI、布林带和MACD指标进行确认。
-   - 峰值条件: RSI > 70, 价格 > 布林带上轨, MACD > 信号线。
-   - 谷值条件: RSI < 30, 价格 < 布林带下轨, MACD < 信号线。
+3. 构建Docker镜像:   ```
+   docker build -t miracle-stock-analysis .   ```
 
-4. 聚类分析:
-   - 使用收盘价、RSI、MACD和成交量变化率作为特征。
-   - 应用K-means算法,将数据点分为3类。
+4. 运行Docker容器:   ```
+   docker run -p 5000:5000 miracle-stock-analysis   ```
 
-5. 拐点预测:
-   - 分析最新的市场状态,包括RSI、布林带位置、MACD和成交量变化。
-   - 根据多个指标的组合给出可能出现拐点的预警。
+5. 在浏览器中访问 `http://localhost:5000` 来使用应用。
+
+注意: 如果您在远程服务器上运行Docker容器,请将`localhost`替换为服务器的IP地址或域名。
 
 ## 注意事项
 
@@ -70,31 +61,3 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 ## 许可证
 
 本项目采用 MIT 许可证。详情请见 [LICENSE](LICENSE) 文件。
-
-## Docker部署
-
-本应用可以通过Docker轻松部署在Linux服务器上。
-
-1. 确保您的Linux服务器已安装Docker。如果没有，可以使用以下命令安装：   ```
-   sudo apt-get update
-   sudo apt-get install docker.io   ```
-
-2. 克隆项目代码到本地：   ```
-   git clone https://github.com/kingwangboss/miracle.git
-   cd miracle   ```
-
-3. 在项目根目录中运行以下命令来构建Docker镜像：   ```
-   sudo docker build -t miracle-stock-analysis .
-   ```
-
-4. 构建完成后，运行以下命令来启动应用：   ```
-   sudo docker run -d -p 5000:5000 miracle-stock-analysis
-   ```
-
-5. 现在，您可以通过服务器的IP地址和端口5000来访问应用，例如：   ```
-   http://your_server_ip:5000
-   ```
-
-注意：请确保您的服务器防火墙允许5000端口的访问。如果您使用的是云服务器，可能还需要在云平台的安全组设置中开放5000端口。
-
-如果在构建过程中遇到网络问题导致无法克隆代码，Dockerfile 会尝试从本地复制代码。确保您已经克隆了代码到本地，或者将代码文件放在与 Dockerfile 相同的目录中。
