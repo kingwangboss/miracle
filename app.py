@@ -1,30 +1,27 @@
 from flask import Flask, render_template, request, jsonify
 from crawler.stock_crawler import StockCrawler
 from analysis.fermat_analysis import ComprehensiveAnalysis, configure_plt_for_backend
-import io
-import base64
-from threading import Lock
 import concurrent.futures
 
 app = Flask(__name__)
-analysis_lock = Lock()
 
 @app.before_request
 def before_request():
     configure_plt_for_backend()
 
 def process_stock_data(stock_code):
-    crawler = StockCrawler(stock_code)
-    data = crawler.fetch_data()
-    
-    with analysis_lock:
-        configure_plt_for_backend()
+    try:
+        crawler = StockCrawler(stock_code)
+        data = crawler.fetch_data()
+        
         analysis = ComprehensiveAnalysis(data)
         accurate_points = analysis.find_accurate_turning_points()
         price_chart, cluster_chart = analysis.get_charts(accurate_points)
         prediction = analysis.predict_next_turning_point()
-    
-    return accurate_points, price_chart, cluster_chart, prediction
+        
+        return accurate_points, price_chart, cluster_chart, prediction
+    except ValueError as e:
+        return str(e), None, None, None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -33,7 +30,12 @@ def index():
         
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(process_stock_data, stock_code)
-            accurate_points, price_chart, cluster_chart, prediction = future.result()
+            result = future.result()
+        
+        if isinstance(result[0], str):  # 错误情况
+            return jsonify({'error': result[0]}), 400
+        
+        accurate_points, price_chart, cluster_chart, prediction = result
         
         return jsonify({
             'turning_points': [

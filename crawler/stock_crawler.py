@@ -1,13 +1,22 @@
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
+import re
 
 class StockCrawler:
     def __init__(self, stock_code):
         self.stock_code = stock_code
         self.base_url = "http://push2his.eastmoney.com/api/qt/stock/kline/get"
 
+    @staticmethod
+    def is_valid_stock_code(stock_code):
+        # 简单的股票代码格式验证
+        return re.match(r'^[0-9]{6}$', stock_code) is not None
+
     def fetch_data(self, days=365):
+        if not self.is_valid_stock_code(self.stock_code):
+            raise ValueError(f"无效的股票代码: {self.stock_code}")
+
         end_date = datetime.now()
         start_date = end_date - timedelta(days=days)
         
@@ -27,7 +36,7 @@ class StockCrawler:
         data = response.json()
 
         if data['data'] is None:
-            raise ValueError(f"无法获取股票 {self.stock_code} 的数据")
+            raise ValueError(f"无法获取股票 {self.stock_code} 的数据，请确认股票代码是否正确")
 
         df = pd.DataFrame(
             [row.split(',') for row in data['data']['klines']],

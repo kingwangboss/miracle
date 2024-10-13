@@ -51,6 +51,11 @@
                 const data = response.data;
                 resultDiv.classList.remove('hidden');
                 
+                if (data.error) {
+                    turningPointsDiv.innerHTML = `<p class="text-red-500">${data.error}</p>`;
+                    return;
+                }
+                
                 let turningPointsHtml = '<h3 class="text-xl font-semibold mb-2">准确拐点</h3><ul class="list-disc pl-5">';
                 data.turning_points.forEach(function(point) {
                     turningPointsHtml += `<li>${point.date}: ${point.type === 'Peak' ? '峰值' : '谷值'} 价格为 ${point.price.toFixed(2)}</li>`;
@@ -72,7 +77,11 @@
             })
             .catch(function (error) {
                 resultDiv.classList.remove('hidden');
-                turningPointsDiv.innerHTML = '<p class="text-red-500">分析出错，请重试</p>';
+                if (error.response && error.response.data && error.response.data.error) {
+                    turningPointsDiv.innerHTML = `<p class="text-red-500">${error.response.data.error}</p>`;
+                } else {
+                    turningPointsDiv.innerHTML = '<p class="text-red-500">分析出错，请重试</p>';
+                }
                 console.error(error);
             });
         });
