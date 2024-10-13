@@ -22,8 +22,13 @@ WORKDIR /app
 # 复制项目文件到容器中
 COPY . /app
 
-# 安装项目依赖
-RUN pip3 install --no-cache-dir -r requirements.txt
+# 使用国内PyPI镜像源，增加重试次数和超时时间
+RUN pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 分步安装依赖
+RUN pip3 install --no-cache-dir -r requirements.txt --retries 10 --timeout 600 || \
+    (pip3 install --no-cache-dir -r requirements.txt --retries 10 --timeout 600 && \
+     pip3 install --no-cache-dir -r requirements.txt --retries 10 --timeout 600)
 
 # 设置环境变量
 ENV FLASK_APP=app.py
