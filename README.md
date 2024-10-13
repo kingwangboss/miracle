@@ -24,7 +24,7 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 
 4. 在输入框中输入6位股票代码(例如: 000001),点击"分析"按钮。
 
-5. 等待分析完成,查看结果,包括:
+5. 等待分析完成,查看结果,包:
    - 识别出的拐点列表
    - 价格走势和拐点分析图
    - 技术指标(RSI和MACD)分析图
@@ -73,51 +73,29 @@ Miracle 是一个基于Python的股票分析工具,利用多种技术指标和�
 
 ## Docker部署
 
-本应用可以通过Docker轻松部署，无需手动克隆代码或安装依赖。
+本应用可以通过Docker轻松部署在Linux服务器上，无需手动克隆代码或安装依赖。
 
-1. 确保您的系统已安装Docker。
+1. 确保您的Linux服务器已安装Docker。如果没有，可以使用以下命令安装：
+   ```
+   sudo apt-get update
+   sudo apt-get install docker.io
+   ```
 
 2. 创建一个新文件夹，并在其中创建名为`Dockerfile`的文件，将以下内容复制到这个文件中：
    ```dockerfile
-   # 使用官方Python运行时作为父镜像
-   FROM python:3.9-slim
-
-   # 安装git
-   RUN apt-get update && apt-get install -y git
-
-   # 设置工作目录
-   WORKDIR /app
-
-   # 克隆项目代码
-   RUN git clone https://github.com/kingwangboss/miracle.git .
-
-   # 安装项目依赖
-   RUN pip install --no-cache-dir -r requirements.txt
-
-   # 安装中文字体
-   RUN apt-get install -y fonts-wqy-microhei && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-   # 设置环境变量
-   ENV FLASK_APP=app.py
-   ENV FLASK_RUN_HOST=0.0.0.0
-
-   # 暴露端口5000供外部访问
-   EXPOSE 5000
-
-   # 运行应用
-   CMD ["flask", "run"]
+   # Dockerfile内容如上
    ```
 
-   注意：请将 `https://github.com/yourusername/miracle-stock-analysis.git` 替换为实际的 GitHub 仓库 URL。
-
 3. 在包含Dockerfile的文件夹中运行以下命令来构建Docker镜像：   ```
-   docker build -t miracle-stock-analysis .
+   sudo docker build -t miracle-stock-analysis .
    ```
 
 4. 构建完成后，运行以下命令来启动应用：   ```
-   docker run -p 5000:5000 miracle-stock-analysis
+   sudo docker run -d -p 5000:5000 miracle-stock-analysis
    ```
 
-5. 在浏览器中访问 `http://localhost:5000` 来使用应用。
+5. 现在，您可以通过服务器的IP地址和端口5000来访问应用，例如：   ```
+   http://your_server_ip:5000
+   ```
 
-注意: 如果您在远程服务器上运行Docker容器，请将`localhost`替换为服务器的IP地址或域名。
+注意：请确保您的服务器防火墙允许5000端口的访问。如果您使用的是云服务器，可能还需要在云平台的安全组设置中开放5000端口。
