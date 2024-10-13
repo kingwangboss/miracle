@@ -1,0 +1,10 @@
+requests
+beautifulsoup4
+pandas
+matplotlib
+scipy
+scikit-learn
+flask
+
+
+

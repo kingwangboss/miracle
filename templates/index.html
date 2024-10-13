@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+        h1 { color: #333; }
+        form { margin-bottom: 20px; }
+        input, button { font-size: 16px; padding: 5px; }
+        #result { margin-top: 20px; }
+        img { max-width: 100%; height: auto; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>股票分析</h1>
+    <form id="stockForm">
+        <input type="text" id="stockCode" placeholder="请输入6位股票代码" required>
+        <button type="submit">分析</button>
+    </form>
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('stockForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const stockCode = document.getElementById('stockCode').value;
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '正在分析，请稍候...';
+
+            axios.post('/', {
+                stock_code: stockCode
+            }, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(function (response) {
+                const data = response.data;
+                let html = '<h2>分析结果</h2>';
+                html += '<h3>拐点</h3>';
+                html += '<ul>';
+                data.turning_points.forEach(function(point) {
+                    html += `<li>${point.date}: ${point.type === 'Peak' ? '峰值' : '谷值'} 价格为 ${point.price.toFixed(2)}</li>`;
+                });
+                html += '</ul>';
+                html += `<h3>预测</h3><p>${data.prediction}</p>`;
+                html += '<h3>价格与拐点分析</h3>';
+                html += `<img src="data:image/png;base64,${data.price_chart}" alt="价格与拐点分析">`;
+                html += '<h3>技术指标分析</h3>';
+                html += `<img src="data:image/png;base64,${data.indicators_chart}" alt="技术指标分析">`;
+                html += '<h3>聚类分析</h3>';
+                html += `<img src="data:image/png;base64,${data.cluster_chart}" alt="聚类分析">`;
+                resultDiv.innerHTML = html;
+            })
+            .catch(function (error) {
+                resultDiv.innerHTML = '分析出错，请重试';
+                console.error(error);
+            });
+        });
+    </script>
+</body>
+</html>
