@@ -12,7 +12,8 @@ import base64
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
-from datetime import datetime
+from datetime import datetime, timedelta
+from sklearn.linear_model import LinearRegression
 
 # 设置中文字体
 mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体为黑体
@@ -282,61 +283,74 @@ class ComprehensiveAnalysis:
         last_point = accurate_points[-1]
         last_price = self.data['Close'].iloc[-1]
         last_date = self.data['Date'].iloc[-1]
-        last_rsi = self.data['RSI'].iloc[-1]
-        last_macd = self.data['MACD'].iloc[-1]
-        last_signal = self.data['Signal'].iloc[-1]
-        last_bb_upper = self.data['BB_upper'].iloc[-1]
-        last_bb_lower = self.data['BB_lower'].iloc[-1]
-        last_k = self.data['K'].iloc[-1]
-        last_d = self.data['D'].iloc[-1]
-        last_obv = self.data['OBV'].iloc[-1]
-        last_obv_prev = self.data['OBV'].iloc[-2]
+        
+        # 计算最近30天的趋势
+        recent_data = self.data.tail(30)
+        X = np.array(range(len(recent_data))).reshape(-1, 1)
+        y = recent_data['Close'].values
+        model = LinearRegression()
+        model.fit(X, y)
+        trend = model.coef_[0]
 
-        days_since_last_point = (last_date - last_point[0]).days
-        price_change = (last_price - last_point[1]) / last_point[1] * 100
+        # 计算技术指标
+        rsi = self.data['RSI'].iloc[-1]
+        macd = self.data['MACD'].iloc[-1]
+        signal = self.data['Signal'].iloc[-1]
+        bb_upper = self.data['BB_upper'].iloc[-1]
+        bb_lower = self.data['BB_lower'].iloc[-1]
+        k = self.data['K'].iloc[-1]
+        d = self.data['D'].iloc[-1]
 
-        buy_signals = [
-            last_rsi < 40,
-            last_price < last_bb_lower,
-            last_macd < last_signal,
-            last_k < last_d,
-            last_obv > last_obv_prev,
-            price_change < -3
-        ]
+        # 计算拐点可能性得分
+        turning_point_score = 0
+        if trend > 0:  # 上升趋势
+            turning_point_score += (rsi - 50) / 50 if rsi > 50 else 0
+            turning_point_score += (last_price - bb_upper) / (bb_upper - bb_lower) if last_price > bb_upper else 0
+            turning_point_score += (macd - signal) / abs(signal) if macd > signal else 0
+            turning_point_score += (k - d) / 100 if k > d else 0
+        else:  # 下降趋势
+            turning_point_score += (50 - rsi) / 50 if rsi < 50 else 0
+            turning_point_score += (bb_lower - last_price) / (bb_upper - bb_lower) if last_price < bb_lower else 0
+            turning_point_score += (signal - macd) / abs(signal) if macd < signal else 0
+            turning_point_score += (d - k) / 100 if k < d else 0
 
-        sell_signals = [
-            last_rsi > 60,
-            last_price > last_bb_upper,
-            last_macd > last_signal,
-            last_k > last_d,
-            last_obv < last_obv_prev,
-            price_change > 3
-        ]
+        # 确保得分在0.1到1之间
+        turning_point_score = max(min(turning_point_score, 1), 0.1)
 
-        buy_score = sum(buy_signals)
-        sell_score = sum(sell_signals)
+        # 预测未来7-15天内出现拐点的可能性
+        days_to_turning_point = int(7 + (1 - turning_point_score) * 8)
+        predicted_date = last_date + timedelta(days=days_to_turning_point)
 
-        # 检查最后一个数据点是否是新的拐点
-        if last_date == last_point[0]:
-            if last_point[2] == 'Peak':
-                return f"最新数据点（{last_date.strftime('%Y-%m-%d')}）被识别为峰值拐点，价格为 {last_price:.2f}。建议关注可能的下跌趋势。"
-            else:  # Valley
-                return f"最新数据点（{last_date.strftime('%Y-%m-%d')}）被识别为谷值拐点，价格为 {last_price:.2f}。建议关注可能的上涨趋势。"
-
+        trend_direction = "上升" if trend > 0 else "下降"
+        
+        # 考虑最近的拐点类型
         if last_point[2] == 'Peak':
-            if buy_score >= 3:
-                return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格已下跌{abs(price_change):.2f}%，多个技术指标显示可能接近谷值，建议考虑买入。"
-            elif sell_score >= 3:
-                return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格已上涨{price_change:.2f}%，多个技术指标显示可能形成新的峰值，建议考虑卖出。"
-            else:
-                return f"最近的拐点是{days_since_last_point}天前的峰值。当前价格变化为{price_change:.2f}%，技术指标显示混合信号，建议观望。"
+            turning_point_type = "谷值" if trend < 0 else "可能的新高点"
         else:  # Valley
-            if sell_score >= 3:
-                return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格已上涨{price_change:.2f}%，多个技术指标显示可能接近峰值，建议考虑卖出。"
-            elif buy_score >= 3:
-                return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格已下跌{abs(price_change):.2f}%，多个技术指标显示可能形成新的谷值，建议考虑买入。"
+            turning_point_type = "峰值" if trend > 0 else "可能的新低点"
+        
+        prediction = f"当前趋势：{trend_direction}\n"
+        prediction += f"预计拐点：{predicted_date.strftime('%Y-%m-%d')}（{days_to_turning_point}天后）\n"
+        prediction += f"拐点类型：{turning_point_type}\n"
+        prediction += f"出现可能性：{turning_point_score:.2%}\n"
+        prediction += "建议："
+        
+        if turning_point_score > 0.7:
+            if trend > 0 and last_point[2] == 'Valley':
+                prediction += "股价可能接近高点，考虑逐步减仓或设置止盈"
+            elif trend < 0 and last_point[2] == 'Peak':
+                prediction += "股价可能接近低点，考虑逐步建仓或观望"
             else:
-                return f"最近的拐点是{days_since_last_point}天前的谷值。当前价格变化为{price_change:.2f}%，技术指标显示混合信号，建议观望。"
+                prediction += "当前趋势强劲，密切关注市场变化"
+        elif turning_point_score > 0.4:
+            prediction += "保持观望，密切关注市场变化"
+        else:
+            if trend > 0:
+                prediction += "短期可能继续上涨，可考虑持有或小幅加仓"
+            else:
+                prediction += "短期可能继续下跌，可考虑观望或小幅减仓"
+
+        return prediction
 
 # 使用示例
 if __name__ == "__main__":
