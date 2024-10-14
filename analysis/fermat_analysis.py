@@ -168,11 +168,12 @@ class ComprehensiveAnalysis:
         
         return turning_points
 
-    def find_accurate_turning_points(self, window=10, min_distance=15, threshold=0.4):
+    def find_accurate_turning_points(self, window=5, min_distance=5, threshold=0.2):
         self.calculate_indicators()
         prices = self.data['Close'].values
         turning_points = []
-        last_point_index = -min_distance  # 初始化为负值，确保第一个点可以被考虑
+        last_point_index = -min_distance
+        last_point_type = None
         
         for i in range(window, len(prices) - window):
             left = prices[i-window:i]
@@ -212,8 +213,21 @@ class ComprehensiveAnalysis:
             
             if (is_peak or is_valley) and turning_point_score > threshold and (i - last_point_index) >= min_distance:
                 point_type = 'Peak' if is_peak else 'Valley'
-                turning_points.append((self.data['Date'].iloc[i], prices[i], point_type))
-                last_point_index = i
+                
+                # 检查是否与上一个拐点类型相同
+                if point_type != last_point_type or last_point_type is None:
+                    # 如果是第一个点，或者与前一个点符合峰谷关系，就添加
+                    if not turning_points or \
+                       (point_type == 'Peak' and prices[i] > turning_points[-1][1]) or \
+                       (point_type == 'Valley' and prices[i] < turning_points[-1][1]):
+                        turning_points.append((self.data['Date'].iloc[i], prices[i], point_type))
+                        last_point_index = i
+                        last_point_type = point_type
+                # 如果与上一个拐点类型相同，但价格更极端，则替换上一个点
+                elif (point_type == 'Peak' and prices[i] > turning_points[-1][1]) or \
+                     (point_type == 'Valley' and prices[i] < turning_points[-1][1]):
+                    turning_points[-1] = (self.data['Date'].iloc[i], prices[i], point_type)
+                    last_point_index = i
         
         return turning_points
 
