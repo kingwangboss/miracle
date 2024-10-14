@@ -1,13 +1,9 @@
 from flask import Flask, render_template, request, jsonify
 from crawler.stock_crawler import StockCrawler
-from analysis.fermat_analysis import ComprehensiveAnalysis, configure_plt_for_backend
+from analysis import ComprehensiveAnalysis
 import concurrent.futures
 
 app = Flask(__name__)
-
-@app.before_request
-def before_request():
-    configure_plt_for_backend()
 
 def process_stock_data(stock_input):
     try:
@@ -15,11 +11,9 @@ def process_stock_data(stock_input):
         data, stock_name, stock_code = crawler.fetch_data()
         
         analysis = ComprehensiveAnalysis(data)
-        accurate_points = analysis.find_accurate_turning_points()
-        price_chart, cluster_chart = analysis.get_charts(accurate_points)
-        prediction = analysis.predict_next_turning_point()
+        turning_points, price_chart, cluster_chart, prediction = analysis.analyze()
         
-        return accurate_points, price_chart, cluster_chart, prediction, stock_name, stock_code
+        return turning_points, price_chart, cluster_chart, prediction, stock_name, stock_code
     except ValueError as e:
         return str(e), None, None, None, None, None
 
@@ -35,7 +29,7 @@ def index():
         if isinstance(result[0], str):  # 错误情况
             return jsonify({'error': result[0]}), 400
         
-        accurate_points, price_chart, cluster_chart, prediction, stock_name, stock_code = result
+        turning_points, price_chart, cluster_chart, prediction, stock_name, stock_code = result
         
         return jsonify({
             'stock_name': stock_name,
@@ -45,7 +39,7 @@ def index():
                     'date': date.strftime('%Y-%m-%d'),
                     'price': float(price),
                     'type': point_type
-                } for date, price, point_type in accurate_points
+                } for date, price, point_type in turning_points
             ],
             'price_chart': price_chart,
             'cluster_chart': cluster_chart,
