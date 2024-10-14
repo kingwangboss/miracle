@@ -12,6 +12,7 @@ import base64
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.io as pio
+from datetime import datetime
 
 # 设置中文字体
 mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体为黑体
@@ -229,7 +230,7 @@ class ComprehensiveAnalysis:
         fig.add_trace(go.Scatter(x=self.data['Date'], y=self.data['Signal'], name='Signal'), row=3, col=1)
         
         fig.update_layout(
-            height=600,  # 调整高度
+            height=600,
             title_text="股票分析图表",
             autosize=True,
             margin=dict(l=50, r=50, t=50, b=50),
@@ -240,6 +241,12 @@ class ComprehensiveAnalysis:
         fig.update_yaxes(title_text="RSI", row=2, col=1)
         fig.update_yaxes(title_text="MACD", row=3, col=1)
         
+        # 添加中文日期格式
+        fig.update_traces(
+            hovertemplate='%{x|%Y年%m月%d日}<br>%{y:.2f}',
+            selector=dict(type='scatter')
+        )
+        
         price_chart = pio.to_json(fig)
         
         # 聚类结果可视化
@@ -247,9 +254,9 @@ class ComprehensiveAnalysis:
         valid_data = self.data.dropna(subset=['Close', 'RSI', 'Cluster'])
         cluster_fig.add_trace(go.Scatter(x=valid_data['Close'], y=valid_data['RSI'], mode='markers',
                                          marker=dict(color=valid_data['Cluster'], colorscale='Viridis', showscale=True),
-                                         text=valid_data['Date'], hoverinfo='text+x+y'))
+                                         text=valid_data['Date'].dt.strftime('%Y年%m月%d日'), hoverinfo='text+x+y'))
         cluster_fig.update_layout(
-            height=500,  # 调整高度
+            height=500,
             title='价格-RSI聚类分析', 
             xaxis_title='收盘价', 
             yaxis_title='RSI',

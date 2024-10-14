@@ -9,9 +9,9 @@ app = Flask(__name__)
 def before_request():
     configure_plt_for_backend()
 
-def process_stock_data(stock_code):
+def process_stock_data(stock_input):
     try:
-        crawler = StockCrawler(stock_code)
+        crawler = StockCrawler(stock_input)
         data = crawler.fetch_data()
         
         analysis = ComprehensiveAnalysis(data)
@@ -26,10 +26,10 @@ def process_stock_data(stock_code):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        stock_code = request.form['stock_code']
+        stock_input = request.form['stock_input']
         
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(process_stock_data, stock_code)
+            future = executor.submit(process_stock_data, stock_input)
             result = future.result()
         
         if isinstance(result[0], str):  # 错误情况

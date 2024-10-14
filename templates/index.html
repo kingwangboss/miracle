@@ -13,8 +13,8 @@
         <h1 class="text-4xl font-bold text-center text-blue-600 mb-8">Miracle 股票分析</h1>
         <form id="stockForm" class="mb-8">
             <div class="flex justify-center">
-                <input type="text" id="stockCode" placeholder="请输入6位股票代码" required
-                       class="px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="stockInput" placeholder="请输入股票代码或名称" required
+                       class="w-64 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     分析
                 </button>
@@ -32,7 +32,7 @@
     <script>
         document.getElementById('stockForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const stockCode = document.getElementById('stockCode').value;
+            const stockInput = document.getElementById('stockInput').value;
             const resultDiv = document.getElementById('result');
             const turningPointsDiv = document.getElementById('turningPoints');
             const predictionDiv = document.getElementById('prediction');
@@ -41,7 +41,7 @@
             turningPointsDiv.innerHTML = '<p class="text-center">正在分析，请稍候...</p>';
 
             axios.post('/', {
-                stock_code: stockCode
+                stock_input: stockInput
             }, {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'
