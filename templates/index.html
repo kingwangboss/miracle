@@ -7,6 +7,20 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans">
     <div class="container mx-auto px-4 py-8">
@@ -20,6 +34,10 @@
                 </button>
             </div>
         </form>
+        <div id="loading" class="flex justify-center items-center hidden">
+            <div class="loader mr-3"></div>
+            <p class="text-lg">正在分析，请稍候...</p>
+        </div>
         <div id="result" class="bg-white shadow-md rounded-lg p-6 mb-8 hidden">
             <h2 class="text-2xl font-semibold mb-4">分析结果</h2>
             <div id="turningPoints"></div>
@@ -36,9 +54,10 @@
             const resultDiv = document.getElementById('result');
             const turningPointsDiv = document.getElementById('turningPoints');
             const predictionDiv = document.getElementById('prediction');
+            const loadingDiv = document.getElementById('loading');
             
             resultDiv.classList.add('hidden');
-            turningPointsDiv.innerHTML = '<p class="text-center">正在分析，请稍候...</p>';
+            loadingDiv.classList.remove('hidden');
 
             axios.post('/', {
                 stock_input: stockInput
@@ -48,6 +67,7 @@
                 }
             })
             .then(function (response) {
+                loadingDiv.classList.add('hidden');
                 const data = response.data;
                 resultDiv.classList.remove('hidden');
                 
@@ -82,6 +102,7 @@
                 Plotly.newPlot('clusterChart', clusterChartData.data, clusterChartData.layout, {responsive: true});
             })
             .catch(function (error) {
+                loadingDiv.classList.add('hidden');
                 resultDiv.classList.remove('hidden');
                 if (error.response && error.response.data && error.response.data.error) {
                     turningPointsDiv.innerHTML = `<p class="text-red-500">${error.response.data.error}</p>`;
