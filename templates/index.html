@@ -56,12 +56,18 @@
                     return;
                 }
                 
-                let turningPointsHtml = '<h3 class="text-xl font-semibold mb-2">准确拐点</h3><ul class="list-disc pl-5">';
+                // 添加股票信息显示
+                let stockInfoHtml = `<h3 class="text-xl font-semibold mb-2">股票信息</h3>
+                                     <p>股票名称：${data.stock_name}</p>
+                                     <p>股票代码：${data.stock_code}</p>`;
+                turningPointsDiv.innerHTML = stockInfoHtml;
+
+                let turningPointsHtml = '<h3 class="text-xl font-semibold mb-2 mt-4">准确拐点</h3><ul class="list-disc pl-5">';
                 data.turning_points.forEach(function(point) {
                     turningPointsHtml += `<li>${point.date}: ${point.type === 'Peak' ? '峰值' : '谷值'} 价格为 ${point.price.toFixed(2)}</li>`;
                 });
                 turningPointsHtml += '</ul>';
-                turningPointsDiv.innerHTML = turningPointsHtml;
+                turningPointsDiv.innerHTML += turningPointsHtml;
 
                 predictionDiv.innerHTML = `<h3 class="text-xl font-semibold mb-2">预测</h3>
                     <p class="font-medium ${data.prediction.includes('最新数据点') ? 'text-blue-600 font-bold' : 

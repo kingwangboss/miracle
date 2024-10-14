@@ -12,16 +12,16 @@ def before_request():
 def process_stock_data(stock_input):
     try:
         crawler = StockCrawler(stock_input)
-        data = crawler.fetch_data()
+        data, stock_name, stock_code = crawler.fetch_data()
         
         analysis = ComprehensiveAnalysis(data)
         accurate_points = analysis.find_accurate_turning_points()
         price_chart, cluster_chart = analysis.get_charts(accurate_points)
         prediction = analysis.predict_next_turning_point()
         
-        return accurate_points, price_chart, cluster_chart, prediction
+        return accurate_points, price_chart, cluster_chart, prediction, stock_name, stock_code
     except ValueError as e:
-        return str(e), None, None, None
+        return str(e), None, None, None, None, None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -35,9 +35,11 @@ def index():
         if isinstance(result[0], str):  # 错误情况
             return jsonify({'error': result[0]}), 400
         
-        accurate_points, price_chart, cluster_chart, prediction = result
+        accurate_points, price_chart, cluster_chart, prediction, stock_name, stock_code = result
         
         return jsonify({
+            'stock_name': stock_name,
+            'stock_code': stock_code,
             'turning_points': [
                 {
                     'date': date.strftime('%Y-%m-%d'),
