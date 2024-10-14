@@ -334,15 +334,24 @@ class ComprehensiveAnalysis:
         # 计算拐点可能性得分
         turning_point_score = 0
         if trend > 0:  # 上升趋势
-            turning_point_score += (rsi - 50) / 50 if rsi > 50 else 0
+            turning_point_score += (rsi - 70) / 30 if rsi > 70 else 0
             turning_point_score += (last_price - bb_upper) / (bb_upper - bb_lower) if last_price > bb_upper else 0
             turning_point_score += (macd - signal) / abs(signal) if macd > signal else 0
-            turning_point_score += (k - d) / 100 if k > d else 0
+            turning_point_score += (k - 80) / 20 if k > 80 else 0
         else:  # 下降趋势
-            turning_point_score += (50 - rsi) / 50 if rsi < 50 else 0
+            turning_point_score += (30 - rsi) / 30 if rsi < 30 else 0
             turning_point_score += (bb_lower - last_price) / (bb_upper - bb_lower) if last_price < bb_lower else 0
             turning_point_score += (signal - macd) / abs(signal) if macd < signal else 0
-            turning_point_score += (d - k) / 100 if k < d else 0
+            turning_point_score += (20 - d) / 20 if d < 20 else 0
+
+        # 计算距离上一个拐点的天数
+        days_since_last_point = (last_date - last_point[0]).days
+
+        # 根据距离上一个拐点的天数调整得分
+        if days_since_last_point < 7:
+            turning_point_score *= (days_since_last_point / 7)
+        elif days_since_last_point > 30:
+            turning_point_score *= 1.5
 
         # 使用sigmoid函数将得分映射到(0, 1)区间
         turning_point_probability = 1 / (1 + np.exp(-turning_point_score))
@@ -371,14 +380,14 @@ class ComprehensiveAnalysis:
             elif trend < 0 and last_point[2] == 'Peak':
                 prediction += "股价可能接近低点，考虑逐步建仓或观望"
             else:
-                prediction += "当前趋势强劲，密切关注市场变化"
+                prediction += "当前趋势强劲，但可能即将出现拐点，密切关注市场变化"
         elif turning_point_probability > 0.4:
-            prediction += "保持观望，密切关注市场变化"
+            prediction += "市场可能即将出现变化，保持观望，密切关注市场动向"
         else:
             if trend > 0:
-                prediction += "短期可能继续上涨，可考虑持有或小幅加仓"
+                prediction += "短期可能继续上涨，可考虑持有或小幅加仓，但注意设置止盈"
             else:
-                prediction += "短期可能继续下跌，可考虑观望或小幅减仓"
+                prediction += "短期可能继续下跌，可考虑观望或小幅减仓，但注意把握反弹机会"
 
         return prediction
 

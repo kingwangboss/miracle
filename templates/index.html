@@ -40,7 +40,8 @@
         </div>
         <div id="result" class="bg-white shadow-md rounded-lg p-6 mb-8 hidden">
             <h2 class="text-2xl font-semibold mb-4">分析结果</h2>
-            <div id="turningPoints"></div>
+            <div id="stockInfo"></div>
+            <div id="turningPoints" class="mt-4"></div>
             <div id="prediction" class="mt-4"></div>
         </div>
         <div id="priceChart" class="bg-white shadow-md rounded-lg p-4 mb-8 h-96"></div>
@@ -52,6 +53,7 @@
             e.preventDefault();
             const stockInput = document.getElementById('stockInput').value;
             const resultDiv = document.getElementById('result');
+            const stockInfoDiv = document.getElementById('stockInfo');
             const turningPointsDiv = document.getElementById('turningPoints');
             const predictionDiv = document.getElementById('prediction');
             const loadingDiv = document.getElementById('loading');
@@ -72,28 +74,42 @@
                 resultDiv.classList.remove('hidden');
                 
                 if (data.error) {
-                    turningPointsDiv.innerHTML = `<p class="text-red-500">${data.error}</p>`;
+                    stockInfoDiv.innerHTML = `<p class="text-red-500">${data.error}</p>`;
                     return;
                 }
                 
-                // 添加股票信息显示
-                let stockInfoHtml = `<h3 class="text-xl font-semibold mb-2">股票信息</h3>
-                                     <p>股票名称：${data.stock_name}</p>
-                                     <p>股票代码：${data.stock_code}</p>`;
-                turningPointsDiv.innerHTML = stockInfoHtml;
+                // 股票信息显示
+                stockInfoDiv.innerHTML = `
+                    <h3 class="text-xl font-semibold mb-2">股票信息</h3>
+                    <p>股票名称：${data.stock_name}</p>
+                    <p>股票代码：${data.stock_code}</p>
+                `;
 
-                let turningPointsHtml = '<h3 class="text-xl font-semibold mb-2 mt-4">准确拐点</h3><ul class="list-disc pl-5">';
+                // 拐点信息显示
+                let turningPointsHtml = '<h3 class="text-xl font-semibold mb-2">准确拐点</h3><ul class="list-disc pl-5">';
                 data.turning_points.forEach(function(point) {
                     turningPointsHtml += `<li>${point.date}: ${point.type === 'Peak' ? '峰值' : '谷值'} 价格为 ${point.price.toFixed(2)}</li>`;
                 });
                 turningPointsHtml += '</ul>';
-                turningPointsDiv.innerHTML += turningPointsHtml;
+                turningPointsDiv.innerHTML = turningPointsHtml;
 
-                predictionDiv.innerHTML = `<h3 class="text-xl font-semibold mb-2">预测</h3>
-                    <p class="font-medium ${data.prediction.includes('最新数据点') ? 'text-blue-600 font-bold' : 
-                        data.prediction.includes('买入') ? 'text-green-600' : 
-                        data.prediction.includes('卖出') ? 'text-red-600' : 
-                        'text-yellow-600'}">${data.prediction}</p>`;
+                // 预测信息显示
+                const predictionLines = data.prediction.split('\n');
+                let predictionHtml = '<h3 class="text-xl font-semibold mb-2">预测分析</h3>';
+                predictionLines.forEach(function(line) {
+                    if (line.startsWith('当前趋势：')) {
+                        predictionHtml += `<p class="font-medium">${line}</p>`;
+                    } else if (line.startsWith('预计拐点：')) {
+                        predictionHtml += `<p class="font-medium text-blue-600">${line}</p>`;
+                    } else if (line.startsWith('拐点类型：')) {
+                        predictionHtml += `<p class="font-medium text-purple-600">${line}</p>`;
+                    } else if (line.startsWith('出现可能性：')) {
+                        predictionHtml += `<p class="font-medium text-green-600">${line}</p>`;
+                    } else if (line.startsWith('建议：')) {
+                        predictionHtml += `<p class="font-medium text-red-600">${line}</p>`;
+                    }
+                });
+                predictionDiv.innerHTML = predictionHtml;
 
                 const priceChartData = JSON.parse(data.price_chart);
                 const clusterChartData = JSON.parse(data.cluster_chart);
@@ -105,9 +121,9 @@
                 loadingDiv.classList.add('hidden');
                 resultDiv.classList.remove('hidden');
                 if (error.response && error.response.data && error.response.data.error) {
-                    turningPointsDiv.innerHTML = `<p class="text-red-500">${error.response.data.error}</p>`;
+                    stockInfoDiv.innerHTML = `<p class="text-red-500">${error.response.data.error}</p>`;
                 } else {
-                    turningPointsDiv.innerHTML = '<p class="text-red-500">分析出错，请重试</p>';
+                    stockInfoDiv.innerHTML = '<p class="text-red-500">分析出错，请重试</p>';
                 }
                 console.error(error);
             });
