@@ -344,11 +344,11 @@ class ComprehensiveAnalysis:
             turning_point_score += (signal - macd) / abs(signal) if macd < signal else 0
             turning_point_score += (d - k) / 100 if k < d else 0
 
-        # 确保得分在0.1到1之间
-        turning_point_score = max(min(turning_point_score, 1), 0.1)
+        # 使用sigmoid函数将得分映射到(0, 1)区间
+        turning_point_probability = 1 / (1 + np.exp(-turning_point_score))
 
         # 预测未来7-15天内出现拐点的可能性
-        days_to_turning_point = int(7 + (1 - turning_point_score) * 8)
+        days_to_turning_point = int(7 + (1 - turning_point_probability) * 8)
         predicted_date = last_date + timedelta(days=days_to_turning_point)
 
         trend_direction = "上升" if trend > 0 else "下降"
@@ -362,17 +362,17 @@ class ComprehensiveAnalysis:
         prediction = f"当前趋势：{trend_direction}\n"
         prediction += f"预计拐点：{predicted_date.strftime('%Y-%m-%d')}（{days_to_turning_point}天后）\n"
         prediction += f"拐点类型：{turning_point_type}\n"
-        prediction += f"出现可能性：{turning_point_score:.2%}\n"
+        prediction += f"出现可能性：{turning_point_probability:.2%}\n"
         prediction += "建议："
         
-        if turning_point_score > 0.7:
+        if turning_point_probability > 0.7:
             if trend > 0 and last_point[2] == 'Valley':
                 prediction += "股价可能接近高点，考虑逐步减仓或设置止盈"
             elif trend < 0 and last_point[2] == 'Peak':
                 prediction += "股价可能接近低点，考虑逐步建仓或观望"
             else:
                 prediction += "当前趋势强劲，密切关注市场变化"
-        elif turning_point_score > 0.4:
+        elif turning_point_probability > 0.4:
             prediction += "保持观望，密切关注市场变化"
         else:
             if trend > 0:
