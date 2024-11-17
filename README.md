@@ -111,3 +111,104 @@ miracle-stock-analysis/
 ## 许可证
 
 本项目采用 MIT 许可证。详情请见 [LICENSE](LICENSE) 文件。
+
+## API 文档
+
+### 股票分析接口
+
+该接口提供股票的技术分析结果，包括拐点识别、趋势预测等功能。
+
+#### 请求信息
+
+- 接口地址：`/api/v1/analyze`
+- 请求方法：GET
+- Content-Type：application/json
+
+#### 请求参数
+
+| 参数名 | 类型 | 必选 | 描述 |
+|--------|------|------|------|
+| stock | string | 是 | 股票代码或名称（如：平安银行、000001） |
+| charts | boolean | 否 | 是否返回图表数据（默认为 false） |
+
+#### 响应参数
+
+```json
+{
+    "code": 200,
+    "data": {
+        "stock_name": "平安银行",
+        "stock_code": "000001",
+        "turning_points": [
+            {
+                "date": "2023-01-15",
+                "price": 12.34,
+                "type": "Peak"  // Peak: 峰值, Valley: 谷值
+            }
+        ],
+        "prediction": "当前趋势：上升\n预计拐点：2024-02-01（7天后）\n拐点类型：峰值\n出现可能性：85%\n建议：股价可能接近高点，考虑逐步减仓",
+        "charts": {  // 仅当 charts=true 时返回
+            "price_chart": "图表数据...",
+            "cluster_chart": "图表数据..."
+        }
+    }
+}
+```
+
+#### 错误响应
+
+```json
+{
+    "error": "错误信息",
+    "code": 400  // 400: 请求错误, 500: 服务器错误
+}
+```
+
+#### 状态码说明
+
+| 状态码 | 说明 |
+|--------|------|
+| 200 | 请求成功 |
+| 400 | 请求参数错误 |
+| 500 | 服务器内部错误 |
+
+#### 调用示例
+
+1. 基本分析（不包含图表）：
+
+```bash
+curl "http://your-domain.com/api/v1/analyze?stock=平安银行"
+```
+
+2. 完整分析（包含图表）：
+
+```bash
+curl "http://your-domain.com/api/v1/analyze?stock=平安银行&charts=true"
+```
+
+#### Python 调用示例
+
+```python
+import requests
+
+def analyze_stock(stock_name, include_charts=False):
+    url = "http://your-domain.com/api/v1/analyze"
+    params = {
+        "stock": stock_name,
+        "charts": str(include_charts).lower()
+    }
+    
+    response = requests.get(url, params=params)
+    return response.json()
+
+# 使用示例
+result = analyze_stock("平安银行", include_charts=True)
+print(result)
+```
+
+#### 注意事项
+
+1. 图表数据较大，如无必要建议设置 `charts=false`
+2. 接口调用频率限制：每个 IP 每分钟最多 60 次请求
+3. 股票数据有 15 分钟延迟
+4. 分析结果仅供参考，不构成投资建议
